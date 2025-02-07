@@ -24,13 +24,14 @@ export default function Login() {
             const { token, message } = response.data;
             setMessage(message);
 
-            localStorage.setItem("token", token);
 
+            localStorage.setItem("token", token);
+            axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
             navigate("/");
 
         } catch (error) {
-            setMessage(error.response?.data?.message || "An error occurred.");
+            setMessage("An error occurred.");
         } finally {
             setLoading(false);
         }

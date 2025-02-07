@@ -1,69 +1,65 @@
-import axios from "axios";
+
 import { useEffect, useState } from "react";
+import axios from "axios";
 
-
-const Chat = () => {
-    const [messages, setMessages] = useState([]);
+const Chat = ({ receiverId }: { receiverId: string | null }) => {
+    const [messages, setMessages] = useState<any[]>([]);
     const [newMessage, setNewMessage] = useState('');
     const [loading, setLoading] = useState(false);
     const currentUserId = localStorage.getItem("token");
-    const receiverId = "receiverUserId"; 
 
     useEffect(() => {
-        const fetchMessages = async ({ currentUserId, receiverId }) => {
+        const fetchMessages = async () => {
+            if (!currentUserId || !receiverId) return;
+
             try {
                 setLoading(true);
                 const response = await axios.get('http://localhost:5001/api/chat/messages', {
                     headers: {
-                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                        Authorization: `Bearer ${currentUserId}`,
                     },
                     params: {
-                        params: { sender: currentUserId, receiver: receiverId }
-                    }
-                })
+                        sender: currentUserId,
+                        receiver: receiverId,
+                    },
+                });
                 setMessages(response.data);
             } catch (error) {
                 console.error("Error fetching messages:", error);
+            } finally {
+                setLoading(false);
             }
-        }
-        if (currentUserId && receiverId) {
-            fetchMessages();
-        }
-    }, [currentUserId, receiverId])
+        };
+        fetchMessages();
+    }, [currentUserId, receiverId]);
+
+
+
 
     const handleSendMessage = async () => {
         try {
+            if (!newMessage || !currentUserId || !receiverId) return;
+
             const response = await axios.post('http://localhost:5001/api/chat/sendmessages', {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem("token")}`,
-                },
                 sender: currentUserId,
                 receiver: receiverId,
-                message: newMessage
-            })
-            setMessages((prev) => [...prev, response.data])
+                message: newMessage,
+            }, {
+                headers: {
+                    Authorization: `Bearer ${currentUserId}`,
+                },
+            });
+            setMessages((prev) => [...prev, response.data]);
             setNewMessage('');
         } catch (error) {
             console.error("Error sending message:", error);
         }
-    }
+    };
+
+    if (loading) return <div className="text-center">Loading chat...</div>;
+
     return (
         <div className='w-full bg-white rounded-lg shadow-md mt-9'>
-            <div className='flex items-center p-4 border-b'>
-                <div className='w-10 h-10 rounded-full bg-gray-300 overflow-hidden'>
-                    <img src="vite.svg" alt="" className="w-full h-full object-cover" />
-                </div>
-                <div className='ml-3 flex flex-col justify-start items-start'>
-                    <p className='font-medium'>Receiver Name</p>
-                    <p className="text-sm text-gray-500">Online</p>
-                </div>
-                <div className='flex items-center space-x-4 ml-auto'>
-                    <button className="text-gray-500 hover:text-purple-600">
-                        ⚙
-                    </button>
-                </div>
-            </div>
-
             <div className='p-4 space-y-4 overflow-y-auto h-64'>
                 {messages.map((msg, idx) => (
                     <div key={idx} className={msg.sender === currentUserId ? 'flex justify-end space-x-2' : 'flex justify-start space-x-2'}>
@@ -74,13 +70,12 @@ const Chat = () => {
                     </div>
                 ))}
             </div>
-
             <div className='p-4 border-t'>
                 <div className='flex items-center space-x-3'>
                     <input
                         type="text"
                         value={newMessage}
-                        onChange={(e)=>setNewMessage(e.target.value)}
+                        onChange={(e) => setNewMessage(e.target.value)}
                         placeholder="Type your message here..."
                         className="p-2 w-full border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
                     />
@@ -94,6 +89,6 @@ const Chat = () => {
             </div>
         </div>
     );
-}
+};
 
 export default Chat;
